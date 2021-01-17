@@ -21,7 +21,17 @@ jobs:
         run: sudo apt install -y build-essential cmake ninja-build libmpfr-dev libmpc-dev libgmp-dev e2fsprogs curl
 
       - name: Build Toolchain
-        run: pushd serenity/Toolchain && ./BuildIt.sh && popd
+        working-directory: serenity/Toolchain
+        run: ./BuildIt.sh
+
+      - name: Generate build files
+        working-directory: serenity/Build
+        run: cmake .. -G Ninja
 
       - name: Build SerenityOS
-        run: pushd serenity/Build && cmake .. -G Ninja && ninja && ninja install && popd
+        working-directory: serenity/Build
+        run: ninja -j$((nprocs + 1))
+
+      - name: Install SerenityOS
+        working-directory: serenity/Build
+        run: ninja install
