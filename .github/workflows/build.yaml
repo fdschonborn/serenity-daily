@@ -1,0 +1,21 @@
+name: Build
+
+on: push
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Update SerenityOS submodule
+        run: git submodule update --remote
+
+      - name: Install prerequisites
+        run: sudo apt install -y build-essential cmake ninja-build libmpfr-dev libmpc-dev libgmp-dev e2fsprogs curl
+
+      - name: Build Toolchain
+        run: pushd serenity/Toolchain && ./BuildIt.sh && popd
+
+      - name: Build SerenityOS
+        run: pushd serenity/Build && cmake .. -G Ninja && ninja && ninja install && popd
