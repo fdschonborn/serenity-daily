@@ -8,8 +8,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Update SerenityOS submodule
-        run: git submodule update --remote
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Checkout SerenityOS
+        uses: actions/checkout@v2
+        with:
+          repository: SerenityOS/serenity
+          path: serenity
 
       - name: Install prerequisites
         run: sudo apt install -y build-essential cmake ninja-build libmpfr-dev libmpc-dev libgmp-dev e2fsprogs curl
