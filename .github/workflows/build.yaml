@@ -20,18 +20,25 @@ jobs:
       - name: Install prerequisites
         run: sudo apt install -y build-essential cmake ninja-build libmpfr-dev libmpc-dev libgmp-dev e2fsprogs curl
 
+      - name: Cache Toolchain
+        uses: actions/cache@v2
+        with:
+          path: ${{ github.workspace }}/Toolchain/Cache/
+          # Keep in sync with SerenityOS' workflow.
+          key: ${{ runner.os }}-toolchain-i686-${{ hashFiles('Userland/Libraries/LibC/**/*.h', 'Toolchain/Patches/*.patch', 'Toolchain/BuildIt.sh') }}
+
       - name: Build Toolchain
-        working-directory: serenity/Toolchain
-        run: ./BuildIt.sh
+        working-directory: ${{ github.workspace }}/serenity/Toolchain/
+        run: TRY_USE_LOCAL_TOOLCHAIN=y ./BuildIt.sh
 
       - name: Generate build files
-        working-directory: serenity/Build
+        working-directory: ${{ github.workspace }}/serenity/Build/
         run: cmake .. -G Ninja
 
       - name: Build SerenityOS
-        working-directory: serenity/Build
+        working-directory: ${{ github.workspace }}/serenity/Build/
         run: ninja -j$((nprocs + 1))
 
       - name: Install SerenityOS
-        working-directory: serenity/Build
+        working-directory: ${{ github.workspace }}/serenity/Build/
         run: ninja install
