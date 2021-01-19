@@ -33,7 +33,7 @@ jobs:
 
       - name: Generate build files
         working-directory: ${{ github.workspace }}/serenity/Build/
-        run: cmake .. -G Ninja
+        run: cmake ${{ github.workspace }}/serenity -G Ninja
 
       - name: Build SerenityOS
         working-directory: ${{ github.workspace }}/serenity/Build/
