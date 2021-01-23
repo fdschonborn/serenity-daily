@@ -10,6 +10,9 @@ on:
   schedule:
     - cron: "0 12 * * *" # Every day at 12:00
 
+env:
+  SERENITY_ROOT: ${{ github.workspace }}/serenity
+
 jobs:
   build:
     name: Build
@@ -39,28 +42,32 @@ jobs:
       - name: Cache Toolchain
         uses: actions/cache@v2
         with:
-          path: ${{ github.workspace }}/serenity/Toolchain/Cache/
+          path: ${{ env.SERENITY_ROOT }}/Toolchain/Cache/
           # Keep in sync with SerenityOS' workflow.
           key: ${{ runner.os }}-toolchain-i686-${{ hashFiles('serenity/Userland/Libraries/LibC/**/*.h', 'serenity/Toolchain/Patches/*.patch', 'serenity/Toolchain/BuildIt.sh') }}
 
       - name: Build Toolchain
-        working-directory: ${{ github.workspace }}/serenity/Toolchain/
+        working-directory: ${{ env.SERENITY_ROOT }}/Toolchain/
         run: TRY_USE_LOCAL_TOOLCHAIN=y ./BuildIt.sh
 
+      - name: Create the Build directory
+        working-directory: ${{ env.SERENITY_ROOT }}
+        run: mkdir -f ${{ env.SERENITY_ROOT }}/Build
+
       - name: Generate build files
-        working-directory: ${{ github.workspace }}/serenity/Build/
-        run: cmake -v ${{ github.workspace }}/serenity/ -G Ninja
+        working-directory: ${{ env.SERENITY_ROOT }}/Build/
+        run: cmake -v ${{ env.SERENITY_ROOT }}/ -G Ninja
 
       - name: Build SerenityOS
-        working-directory: ${{ github.workspace }}/serenity/Build/
+        working-directory: ${{ env.SERENITY_ROOT }}/Build/
         run: ninja -v -j$((nprocs + 1))
 
       - name: Install SerenityOS
-        working-directory: ${{ github.workspace }}/serenity/Build/
+        working-directory: ${{ env.SERENITY_ROOT }}/Build/
         run: ninja -v install
 
       - name: Build Image
-        working-directory: ${{ github.workspace }}/serenity/Build/
+        working-directory: ${{ env.SERENITY_ROOT }}/Build/
         run: ninja -v image
 
       - name: Set release variables
@@ -85,6 +92,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ github.workspace }}/serenity/Build/_disk_image
+          asset_path: ${{ env.SERENITY_ROOT }}/Build/_disk_image
           asset_name: serenity-${{ env.SERENITYOS_DAILY_DATE }}.${{ env.SERENITYOS_DAILY_PATCH }}.img
           asset_content_type: application/octet-stream
