@@ -87,3 +87,4 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ${{ github.workspace }}/serenity/Build/_disk_image
           asset_name: serenity-${{ env.SERENITYOS_DAILY_DATE }}.${{ env.SERENITYOS_DAILY_PATCH }}.img
+          asset_content_type: application/octet-stream
