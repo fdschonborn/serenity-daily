@@ -47,10 +47,6 @@ jobs:
         working-directory: ${{ github.workspace }}/serenity/Toolchain/
         run: TRY_USE_LOCAL_TOOLCHAIN=y ./BuildIt.sh
 
-      - name: Create build directory
-        working-directory: ${{ github.workspace }}/serenity/
-        run: mkdir ${{ github.workspace }}/serenity/Build/
-
       - name: Generate build files
         working-directory: ${{ github.workspace }}/serenity/Build/
         run: cmake -v ${{ github.workspace }}/serenity/ -G Ninja
