@@ -52,7 +52,7 @@ jobs:
 
       - name: Create the Build directory
         working-directory: ${{ env.SERENITY_ROOT }}
-        run: mkdir -f ${{ env.SERENITY_ROOT }}/Build
+        run: mkdir -f ${{ env.SERENITY_ROOT }}/Build/
 
       - name: Generate build files
         working-directory: ${{ env.SERENITY_ROOT }}/Build/
@@ -66,9 +66,13 @@ jobs:
         working-directory: ${{ env.SERENITY_ROOT }}/Build/
         run: ninja -v install
 
-      - name: Build Image
+      - name: Build QEMU Image
         working-directory: ${{ env.SERENITY_ROOT }}/Build/
-        run: ninja -v image
+        run: ninja -v qemu-image
+
+      - name: Build GRUB Image
+        working-directory: ${{ env.SERENITY_ROOT }}/Build/
+        run: ninja -v grub-image
 
       - name: Set release variables
         run: |
@@ -86,12 +90,22 @@ jobs:
           tag_name: v${{ env.SERENITYOS_DAILY_DATE }}.${{ env.SERENITYOS_DAILY_PATCH }}
           release_name: SerenityOS Daily (${{ env.SERENITYOS_DAILY_DATE_PRETTY }} Patch ${{ env.SERENITYOS_DAILY_PATCH }})
 
-      - name: Update image to Release
+      - name: Update QEMU Image to Release
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ${{ env.SERENITY_ROOT }}/Build/_disk_image
-          asset_name: serenity-${{ env.SERENITYOS_DAILY_DATE }}.${{ env.SERENITYOS_DAILY_PATCH }}.img
+          asset_name: serenity-qemu-${{ env.SERENITYOS_DAILY_DATE }}.${{ env.SERENITYOS_DAILY_PATCH }}.img
+          asset_content_type: application/octet-stream
+
+      - name: Update GRUB Image to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ env.SERENITY_ROOT }}/Build/grub_disk_image
+          asset_name: serenity-grub-${{ env.SERENITYOS_DAILY_DATE }}.${{ env.SERENITYOS_DAILY_PATCH }}.img
           asset_content_type: application/octet-stream
