@@ -52,7 +52,7 @@ jobs:
 
       - name: Create the Build directory
         working-directory: ${{ env.SERENITY_ROOT }}
-        run: mkdir -f ${{ env.SERENITY_ROOT }}/Build/
+        run: mkdir -pv ${{ env.SERENITY_ROOT }}/Build/
 
       - name: Generate build files
         working-directory: ${{ env.SERENITY_ROOT }}/Build/
