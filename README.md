@@ -1,5 +1,7 @@
-# SerenityOS Daily
+# [SerenityOS][serenityos] Daily
 
-![Build](https://github.com/fdschonborn/serenityos-daily/workflows/Build/badge.svg)
+![CI](https://github.com/fdschonborn/serenityos-daily/workflows/CI/badge.svg)
 
-Daily builds for SerenityOS.
+Daily builds for [SerenityOS][serenityos].
+
+[serenityos]: https://serenityos.org/
