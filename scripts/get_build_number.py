@@ -8,10 +8,10 @@ request_url = f"https://api.github.com/repos/{repo}/tags"
 last_tag = requests.get(request_url).json()[0]["name"]
 parts1 = last_tag.split(".")
 parts2 = parts1[1].split("-")
-last_date, last_build = parts1[0].lstrip("v"), int(parts2[0])
+last_date, last_build = str(parts1[0].lstrip("v")), int(parts2[0])
 
 utcnow = datetime.utcnow()
-now_date = f"{utcnow.year:04d}{utcnow.month:02d}{utcnow.day:02d}"
+now_date = f"{str(utcnow.year)[2:4]}{utcnow.month:02d}{utcnow.day:02d}"
 
 new_build = 0
 if last_date == now_date:
