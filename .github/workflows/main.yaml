@@ -28,8 +28,13 @@ jobs:
           repository: SerenityOS/serenity
           path: serenity
 
-      - name: Install prerequisites
+      - name: Install SerenityOS prerequisites
         run: sudo apt install -y build-essential cmake ninja-build libmpfr-dev libmpc-dev libgmp-dev e2fsprogs curl qemu-system-i386 qemu-utils
+
+      - name: Install script prerequisites
+        run: |
+          sudo apt install -y curl python3-pip
+          pip3 install --user requests
 
       - name: Install GCC
         run: |
@@ -79,7 +84,7 @@ jobs:
           echo "SERENITYOS_DAILY_DATE=$(date +%y%m%d)" >> $GITHUB_ENV
           echo "SERENITYOS_DAILY_DATE_PRETTY=$(date +%Y/%m/%d)" >> $GITHUB_ENV
           # Update the BUILD file every time we need a new build.
-          echo "SERENITYOS_DAILY_BUILD=$(cat ${{ github.workspace }}/BUILD)" >> $GITHUB_ENV
+          echo "SERENITYOS_DAILY_BUILD=$(python3 ${{ github.workspace }}/scripts/get_build_number.py)" >> $GITHUB_ENV
           echo "SERENITYOS_DAILY_COMMIT_ID=$(git -C ${{ env.SERENITY_ROOT }} rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - id: create_release
