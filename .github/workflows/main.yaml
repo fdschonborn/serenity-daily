@@ -28,15 +28,23 @@ jobs:
           repository: SerenityOS/serenity
           path: serenity
 
-      - name: Install SerenityOS prerequisites
-        run: sudo apt install -y build-essential cmake ninja-build libmpfr-dev libmpc-dev libgmp-dev e2fsprogs curl qemu-system-i386 qemu-utils
-
-      - name: Install script prerequisites
+      - name: Install script dependencies
         run: |
           sudo apt install -y curl python3-pip
           pip3 install --user requests
 
-      - name: Install GCC
+      - name: Set environment variables
+        run: |
+          echo "SERENITYOS_DAILY_DATE=$(date +%y%m%d)" >> $GITHUB_ENV
+          echo "SERENITYOS_DAILY_DATE_PRETTY=$(date +%Y/%m/%d)" >> $GITHUB_ENV
+          # Update the BUILD file every time we need a new build.
+          echo "SERENITYOS_DAILY_BUILD=$(python3 ${{ github.workspace }}/scripts/get_build_number.py)" >> $GITHUB_ENV
+          echo "SERENITYOS_DAILY_COMMIT_ID=$(git -C ${{ env.SERENITY_ROOT }} rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Install SerenityOS prerequisites
+        run: sudo apt install -y build-essential cmake ninja-build libmpfr-dev libmpc-dev libgmp-dev e2fsprogs curl qemu-system-i386 qemu-utils
+
+      - name: Set up GCC 10
         run: |
           sudo apt install -y gcc-10 g++-10
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 900 --slave /usr/bin/g++ g++ /usr/bin/g++-10
@@ -71,21 +79,9 @@ jobs:
         working-directory: ${{ env.SERENITY_ROOT }}/Build/
         run: ninja -v install
 
-      - name: Build QEMU Image
-        working-directory: ${{ env.SERENITY_ROOT }}/Build/
-        run: ninja -v qemu-image
-
-      - name: Build GRUB Image
+      - name: Build GRUB image
         working-directory: ${{ env.SERENITY_ROOT }}/Build/
         run: ninja -v grub-image
-
-      - name: Set environment variables
-        run: |
-          echo "SERENITYOS_DAILY_DATE=$(date +%y%m%d)" >> $GITHUB_ENV
-          echo "SERENITYOS_DAILY_DATE_PRETTY=$(date +%Y/%m/%d)" >> $GITHUB_ENV
-          # Update the BUILD file every time we need a new build.
-          echo "SERENITYOS_DAILY_BUILD=$(python3 ${{ github.workspace }}/scripts/get_build_number.py)" >> $GITHUB_ENV
-          echo "SERENITYOS_DAILY_COMMIT_ID=$(git -C ${{ env.SERENITY_ROOT }} rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - id: create_release
         name: Create Release
@@ -96,22 +92,7 @@ jobs:
           tag_name: v${{ env.SERENITYOS_DAILY_DATE }}.${{ env.SERENITYOS_DAILY_BUILD }}-${{ env.SERENITYOS_DAILY_COMMIT_ID }}
           release_name: SerenityOS Daily (${{ env.SERENITYOS_DAILY_DATE_PRETTY }} Build ${{ env.SERENITYOS_DAILY_BUILD }}) (Commit ${{ env.SERENITYOS_DAILY_COMMIT_ID }})
 
-      - name: Create QEMU Image archive
-        run: |
-          ARCHIVE_FILENAME="serenity-qemu-${{ env.SERENITYOS_DAILY_DATE }}.${{ env.SERENITYOS_DAILY_BUILD }}-${{ env.SERENITYOS_DAILY_COMMIT_ID }}.tar.xz"
-          tar -cvf $ARCHIVE_FILENAME ${{ env.SERENITY_ROOT }}/Build/_disk_image ${{ env.SERENITY_ROOT }}/Kernel/Kernel
-
-      - name: Update QEMU Image to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: serenity-qemu-${{ env.SERENITYOS_DAILY_DATE }}.${{ env.SERENITYOS_DAILY_BUILD }}-${{ env.SERENITYOS_DAILY_COMMIT_ID }}.tar.xz
-          asset_name: serenity-qemu-${{ env.SERENITYOS_DAILY_DATE }}.${{ env.SERENITYOS_DAILY_BUILD }}-${{ env.SERENITYOS_DAILY_COMMIT_ID }}.tar.xz
-          asset_content_type: application/octet-stream
-
-      - name: Update GRUB Image to Release
+      - name: Update GRUB image to Release
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
