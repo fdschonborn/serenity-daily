@@ -28,6 +28,9 @@ jobs:
           repository: SerenityOS/serenity
           path: serenity
 
+      - name: Update APT cache
+        run: sudo apt update -y
+
       - name: Install script dependencies
         run: |
           sudo apt install -y curl python3-pip
