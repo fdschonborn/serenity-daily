@@ -37,7 +37,9 @@ jobs:
           pip3 install --user requests
 
       - name: Set environment variables
-        run: python3 ${{ github.workspace }}/bin/env.py
+        env:
+          GRAPHQL_API_TOKEN: ${{ secrets.GRAPHQL_API_TOKEN }}
+        run: python3 ${{ github.workspace }}/scripts/env.py
 
       - name: Install SerenityOS prerequisites
         run: sudo apt install -y build-essential cmake ninja-build libmpfr-dev libmpc-dev libgmp-dev e2fsprogs curl qemu-system-i386 qemu-utils
