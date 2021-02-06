@@ -1,6 +1,8 @@
 import subprocess
 import os
 from datetime import datetime
+from typing import List
+
 
 import requests
 
@@ -10,7 +12,7 @@ class Tag:
     build: int
     commit: str
 
-    def __init__(self, parts: list[str]):
+    def __init__(self, parts: List[str]):
         self.date = parts[0].lstrip("v")
         self.build = int(parts[1])
         self.commit = parts[2]
