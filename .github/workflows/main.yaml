@@ -37,12 +37,7 @@ jobs:
           pip3 install --user requests
 
       - name: Set environment variables
-        run: |
-          echo "SERENITY_DAILY_DATE=$(date +%y%m%d)" >> $GITHUB_ENV
-          echo "SERENITY_DAILY_DATE_PRETTY=$(date +%Y/%m/%d)" >> $GITHUB_ENV
-          # Update the BUILD file every time we need a new build.
-          echo "SERENITY_DAILY_BUILD=$(python3 ${{ github.workspace }}/scripts/get_build_number.py)" >> $GITHUB_ENV
-          echo "SERENITY_DAILY_COMMIT_ID=$(git -C ${{ env.SERENITY_ROOT }} rev-parse --short HEAD)" >> $GITHUB_ENV
+        run: python3 ${{ github.workspace }}/bin/env.py
 
       - name: Install SerenityOS prerequisites
         run: sudo apt install -y build-essential cmake ninja-build libmpfr-dev libmpc-dev libgmp-dev e2fsprogs curl qemu-system-i386 qemu-utils
@@ -92,11 +87,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT_ID }}
-          release_name: SerenityOS Daily (${{ env.SERENITY_DAILY_DATE_PRETTY }} Build ${{ env.SERENITY_DAILY_BUILD }}) (Commit ${{ env.SERENITY_DAILY_COMMIT_ID }})
+          tag_name: v${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}
+          release_name: SerenityOS Daily ${{ env.SERENITY_DAILY_DATE }} Build ${{ env.SERENITY_DAILY_BUILD }} Commit ${{ env.SERENITY_DAILY_COMMIT }}
 
       - name: Compress GRUB image
-        run: zstd -z -19 -T0 ${{ env.SERENITY_ROOT }}/Build/grub_disk_image -o ${{ env.SERENITY_ROOT }}/Build/serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT_ID }}.img.zst
+        run: zstd -z -19 -T0 ${{ env.SERENITY_ROOT }}/Build/grub_disk_image -o ${{ env.SERENITY_ROOT }}/Build/serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.img.zst
 
       - name: Update GRUB image to Release
         uses: actions/upload-release-asset@v1
@@ -104,6 +99,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.SERENITY_ROOT }}/Build/serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT_ID }}.img.zst
-          asset_name: serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT_ID }}.img.zst
+          asset_path: ${{ env.SERENITY_ROOT }}/Build/serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.img.zst
+          asset_name: serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.img.zst
           asset_content_type: application/octet-stream
