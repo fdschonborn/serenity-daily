@@ -1,9 +1,13 @@
-import subprocess
-import os
-from datetime import datetime
-from typing import List
-from pathlib import Path
+#!/usr/bin/env python3
+# env.py
+# Fetch and parse the last release's tag name and create a new tag for the next
+# release.
 
+import os
+import subprocess
+from datetime import datetime
+from pathlib import Path
+from typing import List
 
 import requests
 
@@ -31,7 +35,7 @@ response = requests.post(
     },
     headers={
         "Authorization": "Bearer {}".format(
-            os.getenv("GRAPHQL_API_TOKEN")
+            os.getenv("GITHUB_TOKEN")
         )
     }).json()
 
@@ -51,8 +55,12 @@ else:
     tag.date = now
     tag.build = 1
 
-tag.commit = subprocess.check_output(["git", "-C", os.getenv("SERENITY_ROOT", "serenity"),
-                                      "rev-parse", "--short", "HEAD"]).strip().decode("utf-8")
+tag.commit = subprocess.check_output(
+    [
+        "git", "-C", os.getenv("SERENITY_ROOT", "serenity"),
+        "rev-parse", "--short", "HEAD"
+    ]
+).strip().decode("utf-8")
 
 with open(os.getenv("GITHUB_ENV", ".env"), "a") as github_env:
     def write_env(name: str, value: str):
