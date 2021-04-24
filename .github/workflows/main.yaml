@@ -3,10 +3,7 @@ name: CI
 on:
   push:
     branches:
-      - master
-  pull_request:
-    branches:
-      - master
+      - main
   schedule:
     - cron: "0 12 * * *" # Every day at 12:00
 
@@ -54,7 +51,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.SERENITY_ROOT }}/Toolchain/Cache/
-          # Keep in sync with serenity's workflow.
+          # Keep in sync with SerenityOS' workflow.
           key: ${{ runner.os }}-toolchain-i686-${{ hashFiles('serenity/Userland/Libraries/LibC/**/*.h', 'serenity/Toolchain/Patches/*.patch', 'serenity/Toolchain/BuildIt.sh') }}
 
       - name: Build Toolchain
