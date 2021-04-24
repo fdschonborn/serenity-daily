@@ -12,8 +12,8 @@ env:
   BUILD_ROOT: ${{ github.workspace }}/serenity/Build
 
 jobs:
-  setup:
-    name: Setup
+  build:
+    name: Build
     runs-on: ubuntu-20.04
 
     steps:
@@ -55,12 +55,6 @@ jobs:
           # Keep in sync with SerenityOS' workflow.
           key: ${{ runner.os }}-toolchain-i686-${{ hashFiles('serenity/Userland/Libraries/LibC/**/*.h', 'serenity/Toolchain/Patches/*.patch', 'serenity/Toolchain/BuildIt.sh') }}
 
-  build:
-    name: Build
-    runs-on: ubuntu-20.04
-    needs: setup
-
-    steps:
       - name: Build Toolchain
         working-directory: ${{ env.SERENITY_ROOT }}/Toolchain/
         run: TRY_USE_LOCAL_TOOLCHAIN=y ./BuildIt.sh
@@ -92,12 +86,6 @@ jobs:
         run: |
           qemu-img convert -O vmdk ${{ env.BUILD_ROOT }}/grub_disk_image ${{ env.BUILD_ROOT }}/serenity-vmware-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.vmdk
 
-  release:
-    name: Release
-    runs-on: ubuntu-20.04
-    needs: build
-
-    steps:
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
