@@ -9,7 +9,7 @@ on:
 
 env:
   SERENITY_ROOT: ${{ github.workspace }}/serenity
-  BUILD_ROOT: ${{ env.SERENITY_ROOT }}/Build
+  BUILD_ROOT: ${{ github.workspace }}/serenity/Build
 
 jobs:
   setup:
