@@ -69,11 +69,11 @@ jobs:
           ninja
           ninja install
 
-      - name: Create & Compress GRUB image
+      - name: Create GRUB image
         working-directory: ${{ env.SERENITY_ROOT }}/Build/
         run: |
           ninja grub-image
-          zstd -z -19 -T0 ${{ env.SERENITY_ROOT }}/Build/grub_disk_image -o ${{ env.SERENITY_ROOT }}/Build/serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.img.zst
+          mv ${{ env.SERENITY_ROOT }}/Build/grub_disk_image  ${{ env.SERENITY_ROOT }}/Build/serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.img
 
       - name: Create Release
         id: create_release
@@ -90,6 +90,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.SERENITY_ROOT }}/Build/serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.img.zst
-          asset_name: serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.img.zst
+          asset_path: ${{ env.SERENITY_ROOT }}/Build/serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.img
+          asset_name: serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.img
           asset_content_type: application/octet-stream
