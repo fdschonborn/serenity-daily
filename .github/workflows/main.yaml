@@ -9,6 +9,7 @@ on:
 
 env:
   SERENITY_ROOT: ${{ github.workspace }}/serenity
+  TOOLCHAIN_ROOT: ${{ github.workspace }}/serenity/Toolchain
   BUILD_ROOT: ${{ github.workspace }}/serenity/Build
 
 jobs:
@@ -26,6 +27,11 @@ jobs:
           repository: SerenityOS/serenity
           path: ${{ env.SERENITY_ROOT }}
 
+      - name: Set environment variables
+        run: |
+          echo "SERENITY_DAILY_DATE=$(date +%y%m%d)" | tee -a $GITHUB_ENV
+          echo "SERENITY_DAILY_COMMIT=$(git -C ${{ env.SERENITY_ROOT }} rev-parse --short HEAD)" | tee -a $GITHUB_ENV
+
       - name: Update APT cache
         run: sudo apt update -y
 
@@ -37,11 +43,6 @@ jobs:
       - name: Install SerenityOS prerequisites
         run: sudo apt install -y build-essential cmake ninja-build libmpfr-dev libmpc-dev libgmp-dev e2fsprogs curl qemu-system-i386 qemu-utils
 
-      - name: Set environment variables
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python3 ${{ github.workspace }}/scripts/env.py
-
       - name: Set up GCC 10
         run: |
           sudo apt install -y gcc-10 g++-10
@@ -51,12 +52,12 @@ jobs:
       - name: Cache Toolchain
         uses: actions/cache@v2
         with:
-          path: ${{ env.SERENITY_ROOT }}/Toolchain/Cache/
+          path: ${{ env.TOOLCHAIN_ROOT }}/Cache
           # Keep in sync with SerenityOS' workflow.
           key: ${{ runner.os }}-toolchain-i686-${{ hashFiles('serenity/Userland/Libraries/LibC/**/*.h', 'serenity/Toolchain/Patches/*.patch', 'serenity/Toolchain/BuildIt.sh') }}
 
       - name: Build Toolchain
-        working-directory: ${{ env.SERENITY_ROOT }}/Toolchain/
+        working-directory: ${{ env.TOOLCHAIN_ROOT }}
         run: TRY_USE_LOCAL_TOOLCHAIN=y ./BuildIt.sh
 
       - name: Create the Build directory
@@ -70,36 +71,36 @@ jobs:
           ninja
           ninja install
 
-      - name: Generate Raw Disk Image
+      - name: Generate GRUB Disk Image
         working-directory: ${{ env.BUILD_ROOT }}
         run: |
           ninja grub-image
-          cp ${{ env.BUILD_ROOT }}/grub_disk_image ${{ env.BUILD_ROOT }}/serenity-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.img
+          cp ${{ env.BUILD_ROOT }}/grub_disk_image ${{ env.BUILD_ROOT }}/serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.img
 
-      - name: Save Raw Disk Image
+      - name: Save GRUB Disk Image
         uses: actions/upload-artifact@v2
         with:
-          name: Raw Disk Image
-          path: ${{ env.BUILD_ROOT }}/serenity-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.img
+          name: GRUB Disk Image (.img)
+          path: ${{ env.BUILD_ROOT }}/serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.img
 
       - name: Generate VirtualBox Disk Image
         working-directory: ${{ env.BUILD_ROOT }}
         run: |
-          qemu-img convert -O vdi ${{ env.BUILD_ROOT }}/grub_disk_image ${{ env.BUILD_ROOT }}/serenity-virtualbox-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.vdi
+          qemu-img convert -O vdi ${{ env.BUILD_ROOT }}/grub_disk_image ${{ env.BUILD_ROOT }}/serenity-virtualbox-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.vdi
 
       - name: Save VirtualBox Disk Image
         uses: actions/upload-artifact@v2
         with:
-          name: VirtualBox Disk Image
-          path: ${{ env.BUILD_ROOT }}/serenity-virtualbox-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.vdi
+          name: VirtualBox Disk Image (.vdi)
+          path: ${{ env.BUILD_ROOT }}/serenity-virtualbox-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.vdi
 
       - name: Generate VMWare Disk Image
         working-directory: ${{ env.BUILD_ROOT }}
         run: |
-          qemu-img convert -O vmdk ${{ env.BUILD_ROOT }}/grub_disk_image ${{ env.BUILD_ROOT }}/serenity-vmware-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.vmdk
+          qemu-img convert -O vmdk ${{ env.BUILD_ROOT }}/grub_disk_image ${{ env.BUILD_ROOT }}/serenity-vmware-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.vmdk
 
       - name: Save VMWare Disk Image
         uses: actions/upload-artifact@v2
         with:
-          name: VMWare Disk Image
-          path: ${{ env.BUILD_ROOT }}/serenity-vmware-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.vmdk
+          name: VMWare Disk Image (.vmdk)
+          path: ${{ env.BUILD_ROOT }}/serenity-vmware-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.vmdk

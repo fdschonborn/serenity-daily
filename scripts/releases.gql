@@ -1,9 +1,0 @@
-query {
-  repository(owner: "fdschonborn", name: "serenity-daily") {
-    releases(first: 1, orderBy: { direction: DESC, field: CREATED_AT }) {
-      nodes {
-        tagName
-      }
-    }
-  }
-}
