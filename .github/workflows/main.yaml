@@ -9,10 +9,11 @@ on:
 
 env:
   SERENITY_ROOT: ${{ github.workspace }}/serenity
+  BUILD_ROOT: ${{ env.SERENITY_ROOT }}/Build
 
 jobs:
-  build:
-    name: Build
+  setup:
+    name: Setup
     runs-on: ubuntu-20.04
 
     steps:
@@ -23,7 +24,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: SerenityOS/serenity
-          path: serenity
+          path: ${{ env.SERENITY_ROOT }}
 
       - name: Update APT cache
         run: sudo apt update -y
@@ -54,27 +55,49 @@ jobs:
           # Keep in sync with SerenityOS' workflow.
           key: ${{ runner.os }}-toolchain-i686-${{ hashFiles('serenity/Userland/Libraries/LibC/**/*.h', 'serenity/Toolchain/Patches/*.patch', 'serenity/Toolchain/BuildIt.sh') }}
 
+  build:
+    name: Build
+    runs-on: ubuntu-20.04
+    needs: setup
+
+    steps:
       - name: Build Toolchain
         working-directory: ${{ env.SERENITY_ROOT }}/Toolchain/
         run: TRY_USE_LOCAL_TOOLCHAIN=y ./BuildIt.sh
 
       - name: Create the Build directory
         working-directory: ${{ env.SERENITY_ROOT }}
-        run: mkdir -p ${{ env.SERENITY_ROOT }}/Build/
+        run: mkdir -pv ${{ env.BUILD_ROOT }}
 
       - name: Build & Install SerenityOS
-        working-directory: ${{ env.SERENITY_ROOT }}/Build/
+        working-directory: ${{ env.BUILD_ROOT }}
         run: |
-          cmake ${{ env.SERENITY_ROOT }}/ -G Ninja
-          ninja
-          ninja install
+          cmake ${{ env.SERENITY_ROOT }} -G Ninja
+          ninja -v
+          ninja -v install
 
-      - name: Create GRUB image
-        working-directory: ${{ env.SERENITY_ROOT }}/Build/
+      - name: Generate GRUB image
+        working-directory: ${{ env.BUILD_ROOT }}
         run: |
           ninja grub-image
-          mv ${{ env.SERENITY_ROOT }}/Build/grub_disk_image  ${{ env.SERENITY_ROOT }}/Build/serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.img
+          cp -v ${{ env.BUILD_ROOT }}/grub_disk_image ${{ env.BUILD_ROOT }}/serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.img
 
+      - name: Generate VirtualBox Disk Image
+        working-directory: ${{ env.BUILD_ROOT }}
+        run: |
+          qemu-img convert -O vdi ${{ env.BUILD_ROOT }}/grub_disk_image ${{ env.BUILD_ROOT }}/serenity-virtualbox-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.vdi
+
+      - name: Generate VMWare Disk Image
+        working-directory: ${{ env.BUILD_ROOT }}
+        run: |
+          qemu-img convert -O vmdk ${{ env.BUILD_ROOT }}/grub_disk_image ${{ env.BUILD_ROOT }}/serenity-vmware-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.vmdk
+
+  release:
+    name: Release
+    runs-on: ubuntu-20.04
+    needs: build
+
+    steps:
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -84,12 +107,32 @@ jobs:
           tag_name: v${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}
           release_name: SerenityOS Daily ${{ env.SERENITY_DAILY_DATE }} Build ${{ env.SERENITY_DAILY_BUILD }} Commit ${{ env.SERENITY_DAILY_COMMIT }}
 
-      - name: Update GRUB image to Release
+      - name: Upload GRUB image to Release
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.SERENITY_ROOT }}/Build/serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.img
+          asset_path: ${{ env.BUILD_ROOT }}/serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.img
           asset_name: serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.img
+          asset_content_type: application/octet-stream
+
+      - name: Upload VirtualBox Disk Image to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ env.BUILD_ROOT }}/serenity-virtualbox-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.vdi
+          asset_name: serenity-virtualbox-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.vdi
+          asset_content_type: application/octet-stream
+
+      - name: Upload VMWare Disk Image to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ env.BUILD_ROOT }}/serenity-vmware-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.vmdk
+          asset_name: serenity-vmware-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.vmdk
           asset_content_type: application/octet-stream
