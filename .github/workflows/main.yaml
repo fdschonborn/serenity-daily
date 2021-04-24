@@ -61,66 +61,45 @@ jobs:
 
       - name: Create the Build directory
         working-directory: ${{ env.SERENITY_ROOT }}
-        run: mkdir -pv ${{ env.BUILD_ROOT }}
+        run: mkdir -p ${{ env.BUILD_ROOT }}
 
       - name: Build & Install SerenityOS
         working-directory: ${{ env.BUILD_ROOT }}
         run: |
-          cmake ${{ env.SERENITY_ROOT }} -G Ninja
-          ninja -v
-          ninja -v install
+          cmake -G Ninja ${{ env.SERENITY_ROOT }}
+          ninja
+          ninja install
 
-      - name: Generate GRUB image
+      - name: Generate Raw Disk Image
         working-directory: ${{ env.BUILD_ROOT }}
         run: |
           ninja grub-image
-          cp -v ${{ env.BUILD_ROOT }}/grub_disk_image ${{ env.BUILD_ROOT }}/serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.img
+          cp ${{ env.BUILD_ROOT }}/grub_disk_image ${{ env.BUILD_ROOT }}/serenity-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.img
+
+      - name: Save Raw Disk Image
+        uses: actions/upload-artifact@v2
+        with:
+          name: Raw Disk Image
+          path: ${{ env.BUILD_ROOT }}/serenity-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.img
 
       - name: Generate VirtualBox Disk Image
         working-directory: ${{ env.BUILD_ROOT }}
         run: |
           qemu-img convert -O vdi ${{ env.BUILD_ROOT }}/grub_disk_image ${{ env.BUILD_ROOT }}/serenity-virtualbox-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.vdi
 
+      - name: Save VirtualBox Disk Image
+        uses: actions/upload-artifact@v2
+        with:
+          name: VirtualBox Disk Image
+          path: ${{ env.BUILD_ROOT }}/serenity-virtualbox-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.vdi
+
       - name: Generate VMWare Disk Image
         working-directory: ${{ env.BUILD_ROOT }}
         run: |
           qemu-img convert -O vmdk ${{ env.BUILD_ROOT }}/grub_disk_image ${{ env.BUILD_ROOT }}/serenity-vmware-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.vmdk
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Save VMWare Disk Image
+        uses: actions/upload-artifact@v2
         with:
-          tag_name: v${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}
-          release_name: SerenityOS Daily ${{ env.SERENITY_DAILY_DATE }} Build ${{ env.SERENITY_DAILY_BUILD }} Commit ${{ env.SERENITY_DAILY_COMMIT }}
-
-      - name: Upload GRUB image to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.BUILD_ROOT }}/serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.img
-          asset_name: serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.img
-          asset_content_type: application/octet-stream
-
-      - name: Upload VirtualBox Disk Image to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.BUILD_ROOT }}/serenity-virtualbox-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.vdi
-          asset_name: serenity-virtualbox-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.vdi
-          asset_content_type: application/octet-stream
-
-      - name: Upload VMWare Disk Image to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.BUILD_ROOT }}/serenity-vmware-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.vmdk
-          asset_name: serenity-vmware-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.vmdk
-          asset_content_type: application/octet-stream
+          name: VMWare Disk Image
+          path: ${{ env.BUILD_ROOT }}/serenity-vmware-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_BUILD }}-${{ env.SERENITY_DAILY_COMMIT }}.vmdk
