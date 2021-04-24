@@ -71,22 +71,22 @@ jobs:
           ninja
           ninja install
 
-      - name: Generate GRUB Disk Image
+      - name: Generate Raw Disk Image
         working-directory: ${{ env.BUILD_ROOT }}
         run: |
-          ninja grub-image
-          cp ${{ env.BUILD_ROOT }}/grub_disk_image ${{ env.BUILD_ROOT }}/serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.img
+          ninja image
+          cp ${{ env.BUILD_ROOT }}/_disk_image ${{ env.BUILD_ROOT }}/serenity-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.img
 
-      - name: Save GRUB Disk Image
+      - name: Save Raw Disk Image
         uses: actions/upload-artifact@v2
         with:
-          name: GRUB Disk Image (.img)
-          path: ${{ env.BUILD_ROOT }}/serenity-grub-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.img
+          name: Raw Disk Image (.img)
+          path: ${{ env.BUILD_ROOT }}/serenity-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.img
 
       - name: Generate VirtualBox Disk Image
         working-directory: ${{ env.BUILD_ROOT }}
         run: |
-          qemu-img convert -O vdi ${{ env.BUILD_ROOT }}/grub_disk_image ${{ env.BUILD_ROOT }}/serenity-virtualbox-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.vdi
+          qemu-img convert -O vdi ${{ env.BUILD_ROOT }}/_disk_image ${{ env.BUILD_ROOT }}/serenity-virtualbox-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.vdi
 
       - name: Save VirtualBox Disk Image
         uses: actions/upload-artifact@v2
@@ -97,7 +97,7 @@ jobs:
       - name: Generate VMWare Disk Image
         working-directory: ${{ env.BUILD_ROOT }}
         run: |
-          qemu-img convert -O vmdk ${{ env.BUILD_ROOT }}/grub_disk_image ${{ env.BUILD_ROOT }}/serenity-vmware-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.vmdk
+          qemu-img convert -O vmdk ${{ env.BUILD_ROOT }}/_disk_image ${{ env.BUILD_ROOT }}/serenity-vmware-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.vmdk
 
       - name: Save VMWare Disk Image
         uses: actions/upload-artifact@v2
