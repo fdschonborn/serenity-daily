@@ -8,9 +8,8 @@ on:
     - cron: "0 12 * * *" # Every day at 12:00
 
 env:
-  SERENITY_ROOT: ${{ github.workspace }}/serenity
-  TOOLCHAIN_ROOT: ${{ github.workspace }}/serenity/Toolchain
-  BUILD_ROOT: ${{ github.workspace }}/serenity/Build
+  TOOLCHAIN_DIR: ${{ github.workspace }}/Toolchain
+  BUILD_DIR: ${{ github.workspace }}/Build
 
 jobs:
   build:
@@ -18,19 +17,15 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
       - name: Checkout SerenityOS
         uses: actions/checkout@v2
         with:
           repository: SerenityOS/serenity
-          path: ${{ env.SERENITY_ROOT }}
 
       - name: Set environment variables
         run: |
           echo "SERENITY_DAILY_DATE=$(date +%y%m%d)" | tee -a $GITHUB_ENV
-          echo "SERENITY_DAILY_COMMIT=$(git -C ${{ env.SERENITY_ROOT }} rev-parse --short HEAD)" | tee -a $GITHUB_ENV
+          echo "SERENITY_DAILY_COMMIT=$(git rev-parse --short HEAD)" | tee -a $GITHUB_ENV
 
       - name: Update APT cache
         run: sudo apt update -y
@@ -52,55 +47,54 @@ jobs:
       - name: Cache Toolchain
         uses: actions/cache@v2
         with:
-          path: ${{ env.TOOLCHAIN_ROOT }}/Cache
+          path: ${{ env.TOOLCHAIN_DIR }}/Cache
           # Keep in sync with SerenityOS' workflow.
           key: ${{ runner.os }}-toolchain-i686-${{ hashFiles('serenity/Userland/Libraries/LibC/**/*.h', 'serenity/Toolchain/Patches/*.patch', 'serenity/Toolchain/BuildIt.sh') }}
 
       - name: Build Toolchain
-        working-directory: ${{ env.TOOLCHAIN_ROOT }}
+        working-directory: ${{ env.TOOLCHAIN_DIR }}
         run: TRY_USE_LOCAL_TOOLCHAIN=y ./BuildIt.sh
 
       - name: Create the Build directory
-        working-directory: ${{ env.SERENITY_ROOT }}
-        run: mkdir -p ${{ env.BUILD_ROOT }}
+        run: mkdir -p ${{ env.BUILD_DIR }}
 
       - name: Build & Install SerenityOS
-        working-directory: ${{ env.BUILD_ROOT }}
+        working-directory: ${{ env.BUILD_DIR }}
         run: |
-          cmake -G Ninja ${{ env.SERENITY_ROOT }}
+          cmake -G Ninja ${{ github.workspace }}
           ninja
           ninja install
 
       - name: Generate Raw Disk Image
-        working-directory: ${{ env.BUILD_ROOT }}
+        working-directory: ${{ env.BUILD_DIR }}
         run: |
           ninja image
-          cp ${{ env.BUILD_ROOT }}/_disk_image ${{ env.BUILD_ROOT }}/serenity-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.img
+          cp ${{ env.BUILD_DIR }}/_disk_image ${{ env.BUILD_DIR }}/serenity-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.img
 
       - name: Save Raw Disk Image
         uses: actions/upload-artifact@v2
         with:
           name: Raw Disk Image (.img)
-          path: ${{ env.BUILD_ROOT }}/serenity-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.img
+          path: ${{ env.BUILD_DIR }}/serenity-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.img
 
       - name: Generate VirtualBox Disk Image
-        working-directory: ${{ env.BUILD_ROOT }}
+        working-directory: ${{ env.BUILD_DIR }}
         run: |
-          qemu-img convert -O vdi ${{ env.BUILD_ROOT }}/_disk_image ${{ env.BUILD_ROOT }}/serenity-virtualbox-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.vdi
+          qemu-img convert -O vdi ${{ env.BUILD_DIR }}/_disk_image ${{ env.BUILD_DIR }}/serenity-virtualbox-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.vdi
 
       - name: Save VirtualBox Disk Image
         uses: actions/upload-artifact@v2
         with:
           name: VirtualBox Disk Image (.vdi)
-          path: ${{ env.BUILD_ROOT }}/serenity-virtualbox-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.vdi
+          path: ${{ env.BUILD_DIR }}/serenity-virtualbox-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.vdi
 
       - name: Generate VMWare Disk Image
-        working-directory: ${{ env.BUILD_ROOT }}
+        working-directory: ${{ env.BUILD_DIR }}
         run: |
-          qemu-img convert -O vmdk ${{ env.BUILD_ROOT }}/_disk_image ${{ env.BUILD_ROOT }}/serenity-vmware-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.vmdk
+          qemu-img convert -O vmdk ${{ env.BUILD_DIR }}/_disk_image ${{ env.BUILD_DIR }}/serenity-vmware-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.vmdk
 
       - name: Save VMWare Disk Image
         uses: actions/upload-artifact@v2
         with:
           name: VMWare Disk Image (.vmdk)
-          path: ${{ env.BUILD_ROOT }}/serenity-vmware-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.vmdk
+          path: ${{ env.BUILD_DIR }}/serenity-vmware-${{ env.SERENITY_DAILY_DATE }}-${{ env.SERENITY_DAILY_COMMIT }}.vmdk
